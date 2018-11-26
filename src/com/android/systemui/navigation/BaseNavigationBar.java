@@ -143,16 +143,6 @@ public abstract class BaseNavigationBar extends LinearLayout implements Navigato
         }
     }
 
-    private final BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-            if (mPulse != null) {
-                mPulse.onReceive(intent);
-            }
-            onReceivedIntent(intent);
-        }
-    };
-
     private void onReceivedIntent(Intent intent) {
         if (Intent.ACTION_SCREEN_ON.equals(intent.getAction())) {
             notifyScreenOn(true);
@@ -185,7 +175,7 @@ public abstract class BaseNavigationBar extends LinearLayout implements Navigato
         filter.addAction(PowerManager.ACTION_POWER_SAVE_MODE_CHANGING);
         filter.addAction(Intent.ACTION_SCREEN_ON);
         filter.addAction(Intent.ACTION_SCREEN_OFF);
-        context.registerReceiver(mReceiver, filter);
+        filter.addAction(Intent.ACTION_BOOT_COMPLETED);
     }
 
     // require implementation. Surely they have something to clean up
@@ -357,6 +347,21 @@ public abstract class BaseNavigationBar extends LinearLayout implements Navigato
         return mCurrentView == mRot90;
     }
 
+    @Override
+    public void notifyPulseScreenOn(boolean screenOn) {
+        if (mPulse != null) {
+            mPulse.notifyScreenOn(screenOn);
+        }
+    }
+
+    @Override
+    public void sendIntentToPulse(Intent intent) {
+        if (mPulse != null) {
+            mPulse.onReceive(intent);
+        }
+        onReceivedIntent(intent);
+    }
+
     // if a bar instance is created from a user mode switch
     // PhoneStatusBar should call this. This allows the view
     // to make adjustments that are otherwise not needed when
@@ -402,11 +407,6 @@ public abstract class BaseNavigationBar extends LinearLayout implements Navigato
         }
         flushSpringSystem();
         onDispose();
-        unsetListeners();
-    }
-
-    private void unsetListeners() {
-        getContext().unregisterReceiver(mReceiver);
     }
 
     private void notifyVerticalChangedListener(boolean newVertical) {
